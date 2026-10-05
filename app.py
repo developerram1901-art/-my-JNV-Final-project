@@ -599,7 +599,8 @@ ensure_demo_data()
 # ============================================================
 # SEPARATE ADMIN ACCOUNT
 # ============================================================
-
+ def normalize_email(value):
+    return (value or "").strip().lower()
 def ensure_admin_account():
     admins_data = safe_load("admins", [])
     if not admins_data:
@@ -699,8 +700,7 @@ def principal_registration_records():
     return safe_load("principal_registrations", [])
 
 
-def normalize_email(value):
-    return (value or "").strip().lower()
+
 
 
 def valid_email(value):
