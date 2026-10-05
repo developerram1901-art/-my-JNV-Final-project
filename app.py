@@ -596,11 +596,12 @@ def ensure_demo_data():
 restore_drive_cache()
 ensure_demo_data()
 
+def normalize_email(value):
+    return (value or "").strip().lower()
 # ============================================================
 # SEPARATE ADMIN ACCOUNT
 # ============================================================
-def normalize_email(value):
-    return (value or "").strip().lower()
+
 def ensure_admin_account():
     admins_data = safe_load("admins", [])
     if not admins_data:
@@ -698,7 +699,6 @@ def password_reset_records():
 
 def principal_registration_records():
     return safe_load("principal_registrations", [])
-
 
 
 
@@ -2223,47 +2223,59 @@ def admin_dashboard():
 @app.route("/admin/principal/create", methods=["GET", "POST"])
 @admin_required
 def admin_create_principal():
+    # Admin creates Principal immediately. NO registration OTP is generated.
     if request.method == "POST":
-        name=request.form.get("principal_name", "").strip()
-        username=request.form.get("username", "").strip()
-        email=normalize_email(request.form.get("email", ""))
-        mobile=request.form.get("mobile", "").strip()
-        school_name=request.form.get("school_name", "").strip()
-        udise=request.form.get("udise", "").strip()
-        district=request.form.get("district", "").strip()
-        state=request.form.get("state", "").strip()
-        password=request.form.get("password", "")
-        confirm=request.form.get("confirm_password", "")
-        existing_username=next((u for u in users() if u.get("username")==username),None)
-        existing_email=next((u for u in users() if normalize_email(u.get("email"))==email and u.get("role")=="principal"),None)
-        if not all([name,username,school_name,district,state]) or not valid_email(email):
+        name = request.form.get("principal_name", "").strip()
+        username = request.form.get("username", "").strip()
+        email = normalize_email(request.form.get("email", ""))
+        mobile = request.form.get("mobile", "").strip()
+        school_name = request.form.get("school_name", "").strip()
+        udise = request.form.get("udise", "").strip()
+        district = request.form.get("district", "").strip()
+        state = request.form.get("state", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        existing_username = next((u for u in users() if u.get("username") == username), None)
+        existing_email = next((u for u in users() if normalize_email(u.get("email")) == email and u.get("role") == "principal"), None)
+        if not all([name, username, school_name, district, state]) or not valid_email(email):
             flash("Principal name, username, valid email और school की जरूरी जानकारी भरें.")
-        elif not re.fullmatch(r"[A-Za-z0-9_.@-]{4,40}",username):
+        elif not re.fullmatch(r"[A-Za-z0-9_.@-]{4,40}", username):
             flash("Username 4-40 characters का रखें; केवल letters, numbers, _, ., @, - इस्तेमाल करें.")
         elif existing_username:
             flash("यह username पहले से मौजूद है. दूसरा username दें.")
         elif existing_email:
             flash("यह email पहले से किसी Principal account में registered है.")
-        elif len(password)<6:
+        elif len(password) < 6:
             flash("Password कम से कम 6 characters का रखें.")
-        elif password!=confirm:
+        elif password != confirm:
             flash("Password और confirm password अलग हैं.")
         else:
-            rows=cleanup_admin_principal_registrations()
-            rows=[x for x in rows if x.get("username")!=username and normalize_email(x.get("email"))!=email]
-            otp=f"{secrets.randbelow(1000000):06d}"
-            rec={"id":secrets.token_hex(16),"principal_name":name,"username":username,"email":email,"mobile":mobile,"school_name":school_name,"udise":udise,"district":district,"state":state,"password":password,"otp":otp,"created_by":admin_current_user().get("username"),"expires_at":(datetime.now()+timedelta(minutes=10)).isoformat(timespec="seconds")}
-            rows.append(rec); save("admin_principal_registrations",rows)
-            ok,status=send_principal_otp_email(email,name,otp,"registration")
+            us = users()
+            new_user = {"id": next_id("U", us), "username": username, "password": password,
+                        "role": "principal", "name": name, "email": email, "mobile": mobile,
+                        "school_name": school_name, "udise": udise, "district": district, "state": state,
+                        "email_verified": True, "created_by": admin_current_user().get("username"),
+                        "created_at": datetime.now().isoformat(timespec="seconds")}
+            us.append(new_user); save("users", us)
+            logs = safe_load("admin_credential_logs", [])
+            logs.append({"id": secrets.token_hex(16), "principal_user_id": new_user.get("id"),
+                         "principal_name": name, "username": username, "password": password,
+                         "email": email, "school_name": school_name,
+                         "created_at": datetime.now().isoformat(timespec="seconds"),
+                         "created_by": admin_current_user().get("username"),
+                         "creation_method": "admin_direct_no_otp"})
+            save("admin_credential_logs", logs)
+            # Email is only a credential notification; it is not required for creation.
+            ok, status = send_principal_credentials_email(email, name, username, password, school_name)
             if ok:
-                flash("OTP Principal ke email par bhej diya gaya hai. Ab OTP verify करें.")
-                return redirect(url_for("admin_verify_principal"))
-            save("admin_principal_registrations",[x for x in rows if x.get("id")!=rec.get("id")])
-            flash(status)
-    body=f'''
+                flash("✅ Principal account तुरंत create हो गया. Login ID/password email पर भेज दिए गए हैं. कोई OTP नहीं भेजा गया.")
+            else:
+                flash(f"✅ Principal account तुरंत create हो गया. कोई OTP नहीं भेजा गया. Credentials email नहीं भेजा जा सका: {status}")
+            return redirect(url_for("admin_dashboard"))
+    body = f'''
     <div class="card login" style="max-width:760px">
       <h1>➕ Create Principal Account</h1>
-      <p class="small">Admin Principal ki details aur password set karega. Pehle Principal ke email par OTP jayega. OTP verify hone ke baad ID/password email par automatically jayenge.</p>
+      <p class="small" style="background:#eaf7ee;padding:12px;border-radius:8px"><b>Direct Admin Creation:</b> Admin details और password save करते ही Principal account तुरंत बन जाएगा. <b>Principal के email पर OTP नहीं जाएगा.</b> Gmail configured होने पर केवल Login ID और Password का notification email जाएगा.</p>
       <form method="post">
         <h3>Principal Information</h3>
         <input name="principal_name" placeholder="Principal Full Name" required>
@@ -2278,49 +2290,18 @@ def admin_create_principal():
         <h3>Principal Login Password</h3>
         <input name="password" type="password" placeholder="Password (minimum 6 characters)" required autocomplete="new-password">
         <input name="confirm_password" type="password" placeholder="Confirm Password" required autocomplete="new-password">
-        <button style="width:100%">📧 Send OTP to Principal</button>
+        <button style="width:100%">✅ Create Principal Directly — No OTP</button>
       </form>
       <p class="center"><a class="btn gray" href="{url_for('admin_dashboard')}">← Back to Admin Panel</a></p>
     </div>'''
-    return page("Create Principal",body)
+    return page("Create Principal", body)
 
-
+# Backward-compatible route. New Admin creation never uses OTP verification.
 @app.route("/admin/principal/verify", methods=["GET", "POST"])
 @admin_required
 def admin_verify_principal():
-    rows=cleanup_admin_principal_registrations()
-    if request.method=="POST":
-        username=request.form.get("username", "").strip()
-        otp=request.form.get("otp", "").strip()
-        rec=next((x for x in rows if x.get("username")==username and x.get("otp")==otp),None)
-        if not rec:
-            flash("OTP गलत या expired है. Admin panel से नया request बनाएं.")
-        elif next((u for u in users() if u.get("username")==username),None):
-            flash("यह username अब पहले से मौजूद है.")
-        else:
-            us=users()
-            new_user={"id":next_id("U",us),"username":rec.get("username"),"password":rec.get("password"),"role":"principal","name":rec.get("principal_name"),"email":rec.get("email"),"mobile":rec.get("mobile",""),"school_name":rec.get("school_name",""),"udise":rec.get("udise",""),"district":rec.get("district",""),"state":rec.get("state","")}
-            us.append(new_user); save("users",us)
-            logs=safe_load("admin_credential_logs",[])
-            logs.append({"id":secrets.token_hex(16),"principal_user_id":new_user.get("id"),"principal_name":rec.get("principal_name"),"username":rec.get("username"),"password":rec.get("password"),"email":rec.get("email"),"school_name":rec.get("school_name"),"created_at":datetime.now().isoformat(timespec="seconds"),"created_by":admin_current_user().get("username")})
-            save("admin_credential_logs",logs)
-            ok,status=send_principal_credentials_email(rec.get("email"),rec.get("principal_name"),rec.get("username"),rec.get("password"),rec.get("school_name"))
-            save("admin_principal_registrations",[x for x in rows if x.get("id")!=rec.get("id")])
-            if ok: flash("✅ Principal account created. Login ID/password Principal ke email par bhej diye gaye hain.")
-            else: flash(f"✅ Principal account created, लेकिन credentials email नहीं भेजा गया: {status}")
-            return redirect(url_for("admin_dashboard"))
-    body=f'''
-    <div class="card login" style="max-width:560px">
-      <h1>📧 Verify Principal OTP</h1>
-      <p class="small">Principal ke email par aaya 6-digit OTP डालें. OTP 10 मिनट valid है.</p>
-      <form method="post">
-        <input name="username" placeholder="Principal Username" required>
-        <input name="otp" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" required>
-        <button style="width:100%">✅ Verify OTP & Create Principal</button>
-      </form>
-      <p class="center"><a class="btn gray" href="{url_for('admin_create_principal')}">← Back</a></p>
-    </div>'''
-    return page("Verify Principal OTP",body)
+    flash("Principal verification OTP is disabled. Admin now creates Principal accounts directly.")
+    return redirect(url_for("admin_create_principal"))
 
 
 @app.route("/admin/change-password", methods=["GET", "POST"])
