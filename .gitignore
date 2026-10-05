@@ -1,0 +1,32 @@
+# Secrets
+.env
+.env.*
+!.env.example
+client_secret*.json
+credentials*.json
+google_token.json
+service-account*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# App runtime data - keep private / in Google Drive
+/data/*.json
+/data/*.tmp
+/data/*.broken-backup.json
+/backups/*
+!/backups/.gitkeep
+
+# Local IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
