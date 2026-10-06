@@ -1138,367 +1138,1152 @@ def backup_all():
 # ============================================================
 
 BASE = """
-
 <!doctype html>
-
 <html lang="en">
-
 <head>
-
 <meta charset="utf-8">
-
-<meta
-name="viewport"
-content="width=device-width,initial-scale=1"
->
-
-<title>
-{{ title or 'JNV Attendance' }}
-</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#123c69">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>{{ title or 'JNV Attendance' }}</title>
 
 <style>
+/* ============================================================
+   JNV ATTENDANCE - RESPONSIVE / MOBILE-FIRST UI
+   Keeps existing Flask routes and page content unchanged.
+   ============================================================ */
 
-*{
-    box-sizing:border-box
+:root{
+    --primary:#123c69;
+    --primary2:#1769aa;
+    --primary3:#285b8e;
+    --bg:#f3f6fb;
+    --card:#ffffff;
+    --text:#172033;
+    --muted:#65758b;
+    --border:#d9e1ea;
+    --success:#18794e;
+    --danger:#b42318;
+    --warning:#c66a00;
+    --purple:#6b46c1;
+    --shadow:0 2px 12px rgba(15,23,42,.08);
+    --radius:14px;
+}
+
+*,
+*::before,
+*::after{
+    box-sizing:border-box;
+}
+
+html{
+    width:100%;
+    min-height:100%;
+    scroll-behavior:smooth;
+    -webkit-text-size-adjust:100%;
 }
 
 body{
     margin:0;
-    font-family:
-    Segoe UI,
-    Arial,
-    sans-serif;
-    background:#f3f6fb;
-    color:#172033
+    min-height:100vh;
+    width:100%;
+    overflow-x:hidden;
+    font-family:Segoe UI,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.45;
 }
+
+body.menu-open{
+    overflow:hidden;
+}
+
+/* ---------------- NAVIGATION ---------------- */
 
 nav{
-    background:#123c69;
-    color:#fff;
-    padding:13px 22px;
-    display:flex;
-    gap:5px;
-    align-items:center;
-    flex-wrap:wrap;
     position:sticky;
     top:0;
-    z-index:5
+    z-index:1000;
+    width:100%;
+    min-height:60px;
+    background:var(--primary);
+    color:#fff;
+    padding:8px max(14px,env(safe-area-inset-right))
+             8px max(14px,env(safe-area-inset-left));
+    display:flex;
+    align-items:center;
+    gap:6px;
+    box-shadow:0 2px 12px rgba(0,0,0,.16);
 }
 
-nav b{
-    font-size:19px;
-    margin-right:auto
+/* Mobile scroll behavior:
+   The navigation stays visible while the user scrolls up,
+   and slides away when scrolling down. */
+nav{
+    transition:transform .24s ease, box-shadow .24s ease;
+    will-change:transform;
+}
+
+nav.nav-hidden{
+    transform:translateY(-110%);
+}
+
+nav.menu-open{
+    transform:translateY(0) !important;
+}
+
+.nav-brand{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+    font-size:18px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.nav-toggle{
+    display:none;
+    width:44px;
+    height:44px;
+    flex:0 0 44px;
+    margin:0;
+    padding:0;
+    border:0;
+    border-radius:10px;
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    cursor:pointer;
+    font-size:24px;
+    line-height:1;
+    align-items:center;
+    justify-content:center;
+    touch-action:manipulation;
+}
+
+.nav-toggle:hover,
+.nav-toggle:focus-visible{
+    background:rgba(255,255,255,.22);
+    outline:none;
+}
+
+.nav-links{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:4px;
+    flex:1 1 auto;
+    min-width:0;
+    flex-wrap:wrap;
 }
 
 nav a{
     color:#fff;
     text-decoration:none;
-    padding:8px 10px;
-    border-radius:7px;
-    font-size:13px
+    padding:9px 10px;
+    min-height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:8px;
+    font-size:13px;
+    white-space:nowrap;
+    touch-action:manipulation;
 }
 
-nav a:hover{
-    background:#285b8e
+nav a:hover,
+nav a:focus-visible{
+    background:var(--primary3);
+    outline:none;
 }
+
+.menu-title{
+    color:#dbeafe;
+    font-size:12px;
+    font-weight:700;
+    padding:7px 8px 3px;
+    white-space:nowrap;
+}
+
+/* ---------------- LAYOUT ---------------- */
 
 .wrap{
-    max-width:1400px;
-    margin:22px auto;
-    padding:0 15px
+    width:100%;
+    max-width:1440px;
+    margin:0 auto;
+    padding:20px 16px calc(30px + env(safe-area-inset-bottom));
 }
 
 .card{
-    background:#fff;
-    border-radius:12px;
+    width:100%;
+    min-width:0;
+    background:var(--card);
+    border-radius:var(--radius);
     padding:18px;
     margin-bottom:18px;
-    box-shadow:0 2px 10px #00000012
+    box-shadow:var(--shadow);
+    overflow:visible;
+}
+
+h1,h2,h3,h4{
+    line-height:1.2;
+    overflow-wrap:anywhere;
+}
+
+h1{
+    font-size:clamp(22px,3vw,32px);
+    margin-top:0;
+}
+
+h2{
+    font-size:clamp(19px,2.5vw,26px);
+}
+
+h3{
+    font-size:18px;
+}
+
+p{
+    overflow-wrap:anywhere;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:
-    repeat(auto-fit,minmax(160px,1fr));
-    gap:14px
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:14px;
 }
 
 .stat{
+    min-width:0;
     padding:18px;
-    border-radius:10px;
-    background:#eaf2fb
+    border-radius:12px;
+    background:#eaf2fb;
 }
 
 .stat strong{
-    font-size:27px;
+    font-size:clamp(23px,3vw,30px);
     display:block;
-    margin-top:4px
+    margin-top:4px;
+    overflow-wrap:anywhere;
+}
+
+/* ---------------- TABLES ---------------- */
+
+.table-wrap{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
+    border-radius:10px;
 }
 
 table{
     width:100%;
+    min-width:650px;
     border-collapse:collapse;
-    background:#fff
+    background:#fff;
 }
 
 th,
 td{
-    padding:9px;
-    border-bottom:
-    1px solid #e5e9ef;
-    text-align:left
+    padding:10px;
+    border-bottom:1px solid #e5e9ef;
+    text-align:left;
+    vertical-align:middle;
 }
 
 th{
     background:#edf3f9;
     position:sticky;
-    top:58px
+    top:60px;
+    z-index:2;
+    font-weight:700;
+}
+
+tbody tr:hover{
+    background:#f8fbff;
+}
+
+/* Existing tables automatically become scrollable on phones. */
+@media(max-width:700px){
+    table{
+        display:block;
+        width:100%;
+        max-width:100%;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        white-space:nowrap;
+        font-size:13px;
+    }
+
+    thead,
+    tbody{
+        width:max-content;
+        min-width:100%;
+    }
+
+    th,
+    td{
+        padding:9px 10px;
+    }
+
+    th{
+        position:sticky;
+        top:0;
+    }
+}
+
+/* ---------------- FORMS / CONTROLS ---------------- */
+
+input,
+select,
+textarea,
+button,
+.btn{
+    font:inherit;
 }
 
 input,
 select,
-button{
-    padding:9px;
-    border:
-    1px solid #ccd5df;
-    border-radius:7px;
-    margin:4px 2px
+textarea{
+    width:auto;
+    max-width:100%;
+    min-height:42px;
+    padding:10px 11px;
+    border:1px solid #ccd5df;
+    border-radius:9px;
+    margin:4px 2px;
+    background:#fff;
+    color:var(--text);
+}
+
+textarea{
+    min-height:90px;
+    resize:vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    outline:3px solid rgba(23,105,170,.14);
+    border-color:var(--primary2);
 }
 
 button,
 .btn{
-    background:#1769aa;
-    color:white;
+    min-height:42px;
+    padding:10px 13px;
     border:0;
+    border-radius:9px;
+    background:var(--primary2);
+    color:#fff;
     cursor:pointer;
     text-decoration:none;
-    display:inline-block
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    touch-action:manipulation;
+    font-weight:600;
 }
 
-.btn{
-    padding:9px 12px;
-    border-radius:7px
+button:hover,
+.btn:hover{
+    filter:brightness(.94);
 }
 
-.danger{
-    background:#b42318
+button:active,
+.btn:active{
+    transform:translateY(1px);
 }
 
-.ok{
-    background:#18794e
+.danger{background:var(--danger)}
+.ok{background:var(--success)}
+.gray{background:#64748b}
+.orange{background:var(--warning)}
+.purple{background:var(--purple)}
+
+form{
+    max-width:100%;
 }
 
-.gray{
-    background:#64748b
-}
-
-.orange{
-    background:#c66a00
-}
-
-.purple{
-    background:#6b46c1
-}
-
-.alert{
-    padding:10px;
-    background:#fff2cc;
-    border-radius:7px;
-    margin-bottom:12px
-}
-
-.login{
-    max-width:430px;
-    margin:70px auto
-}
-
-.small{
-    color:#65758b;
-    font-size:13px
-}
-
-.center{
-    text-align:center
+form > input,
+form > select,
+form > textarea{
+    max-width:100%;
 }
 
 .toolbar{
     display:flex;
     gap:7px;
     align-items:center;
-    flex-wrap:wrap
+    flex-wrap:wrap;
+}
+
+.toolbar > *{
+    max-width:100%;
 }
 
 .badge{
     display:inline-block;
-    padding:4px 8px;
+    padding:5px 9px;
     border-radius:15px;
     background:#eaf2fb;
-    font-size:12px
+    font-size:12px;
 }
 
-.good{
-    color:#18794e;
-    font-weight:bold
+.alert{
+    padding:12px 14px;
+    background:#fff2cc;
+    border:1px solid #f0d77a;
+    border-radius:9px;
+    margin-bottom:12px;
+    overflow-wrap:anywhere;
 }
 
-.bad{
-    color:#b42318;
-    font-weight:bold
+.small{
+    color:var(--muted);
+    font-size:13px;
 }
 
-.warn{
-    color:#a15c00;
-    font-weight:bold
-}
+.center{text-align:center}
+
+.good{color:var(--success);font-weight:bold}
+.bad{color:var(--danger);font-weight:bold}
+.warn{color:#a15c00;font-weight:bold}
 
 .progress{
     background:#e8edf3;
     border-radius:20px;
     overflow:hidden;
     height:12px;
-    min-width:90px
+    min-width:90px;
 }
 
 .progress span{
     display:block;
     height:100%;
-    background:#18794e
+    background:var(--success);
 }
 
 .menu-group{
     display:inline-flex;
     gap:5px;
     align-items:center;
-    flex-wrap:wrap
+    flex-wrap:wrap;
 }
 
 .section-title{
-    border-left:
-    5px solid #1769aa;
-    padding-left:10px
+    border-left:5px solid var(--primary2);
+    padding-left:10px;
 }
 
-@media(max-width:700px){
+/* ---------------- LOGIN ---------------- */
 
-    nav b{
-        width:100%
+.login{
+    position:relative;
+    width:min(430px,100%);
+    margin:clamp(25px,8vh,70px) auto;
+}
+
+.login .card{
+    padding:22px;
+}
+
+.login form input,
+.login form select,
+.login form textarea{
+    width:100%;
+    margin:5px 0;
+}
+
+.login form button,
+.login form .btn{
+    width:100%;
+    margin:6px 0;
+}
+
+.password-wrap{
+    position:relative;
+    width:100%;
+    margin:0;
+}
+
+.password-wrap input{
+    width:100%;
+    padding-right:82px;
+    box-sizing:border-box;
+}
+
+.password-toggle{
+    position:absolute;
+    right:6px;
+    top:6px;
+    min-height:30px;
+    margin:0;
+    padding:5px 9px;
+    background:#64748b;
+    color:#fff;
+    border:0;
+    border-radius:6px;
+    font-size:12px;
+    cursor:pointer;
+}
+
+/* ---------------- HELP CENTER ---------------- */
+
+.help-page{
+    width:min(1150px,100%);
+    margin:20px auto;
+    padding:0 10px;
+}
+
+.help-hero{
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:#fff;
+    border-radius:16px;
+    padding:28px;
+    margin-bottom:18px;
+    box-shadow:0 10px 30px rgba(76,29,149,.16);
+}
+
+.help-hero h1{
+    margin:0 0 10px;
+    font-size:clamp(24px,5vw,30px);
+}
+
+.help-hero p{
+    margin:8px 0;
+    line-height:1.6;
+}
+
+.help-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+}
+
+.help-section{
+    background:#fff;
+    border-radius:14px;
+    padding:20px;
+    border:1px solid #e5e7eb;
+    box-shadow:0 4px 14px rgba(15,23,42,.05);
+    min-width:0;
+}
+
+.help-section h2{
+    margin-top:0;
+    color:#4f46e5;
+    font-size:20px;
+}
+
+.help-section li{
+    margin:6px 0;
+    line-height:1.5;
+}
+
+.flow{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-top:12px;
+}
+
+.flow-step{
+    background:#eef2ff;
+    border:1px solid #c7d2fe;
+    padding:10px 14px;
+    border-radius:10px;
+    font-weight:700;
+    text-align:center;
+    min-width:120px;
+}
+
+.flow-arrow{
+    font-size:24px;
+    font-weight:700;
+    color:#6366f1;
+}
+
+.contact-card{
+    background:#f8fafc;
+    border-left:4px solid #6366f1;
+    border-radius:10px;
+    padding:12px 14px;
+}
+
+.help-footer{
+    text-align:center;
+    margin:20px 0 4px;
+    color:#64748b;
+    font-size:13px;
+}
+
+.login-help,
+.login-help-button{
+    background:#6d4bc1;
+    color:#fff;
+    border:0;
+    border-radius:8px;
+    font-weight:700;
+    font-size:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+
+.login-help{
+    position:absolute;
+    right:18px;
+    top:18px;
+    text-decoration:none;
+    padding:8px 12px;
+}
+
+.login-help-button{
+    position:absolute;
+    right:18px;
+    top:18px;
+    padding:8px 12px;
+    cursor:pointer;
+    z-index:2;
+}
+
+.help-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.72);
+    z-index:9999;
+    padding:20px;
+    overflow:auto;
+}
+
+.help-modal.open{display:block}
+
+.help-modal-box{
+    max-width:1100px;
+    margin:20px auto;
+    background:#f8fafc;
+    border-radius:18px;
+    box-shadow:0 15px 50px rgba(0,0,0,.3);
+    overflow:hidden;
+}
+
+.help-modal-head{
+    position:sticky;
+    top:0;
+    background:#4f46e5;
+    color:#fff;
+    padding:18px 22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    z-index:2;
+}
+
+.help-modal-head h2{
+    margin:0;
+    font-size:22px;
+}
+
+.help-close{
+    background:#fff;
+    color:#4f46e5;
+    border:0;
+    border-radius:8px;
+    padding:8px 12px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.help-modal-content{padding:20px}
+
+.help-mini-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+}
+
+.help-mini-card{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding:16px;
+}
+
+.help-mini-card h3{
+    margin-top:0;
+    color:#4f46e5;
+}
+
+.help-flow{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-top:10px;
+}
+
+.help-flow-step{
+    background:#eef2ff;
+    border:1px solid #c7d2fe;
+    border-radius:10px;
+    padding:9px 12px;
+    font-weight:700;
+    text-align:center;
+}
+
+.help-flow-arrow{
+    font-size:22px;
+    font-weight:800;
+    color:#6366f1;
+}
+
+.help-contact{
+    background:#eef2ff;
+    border-left:4px solid #6366f1;
+    border-radius:10px;
+    padding:10px 14px;
+}
+
+/* ---------------- MOBILE ---------------- */
+
+@media(max-width:900px){
+    .nav-toggle{
+        display:inline-flex;
+        order:2;
+        margin-left:auto;
     }
 
-    table{
-        font-size:12px
+    .nav-brand{
+        order:1;
+        max-width:calc(100% - 54px);
+        overflow:hidden;
+        text-overflow:ellipsis;
     }
 
-    th,
-    td{
-        padding:7px
+    .nav-links{
+        display:none;
+        position:absolute;
+        left:0;
+        right:0;
+        top:60px;
+        max-height:calc(100vh - 60px);
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        background:var(--primary);
+        padding:10px 12px calc(14px + env(safe-area-inset-bottom));
+        flex-direction:column;
+        align-items:stretch;
+        justify-content:flex-start;
+        gap:3px;
+        box-shadow:0 10px 18px rgba(0,0,0,.2);
+    }
+
+    nav.menu-open .nav-links{
+        display:flex;
+    }
+
+    nav a{
+        width:100%;
+        min-height:44px;
+        justify-content:flex-start;
+        padding:11px 13px;
+        font-size:14px;
+    }
+
+    .menu-title{
+        padding:12px 13px 5px;
     }
 
     .wrap{
-        padding:0 8px
+        padding:14px 10px calc(24px + env(safe-area-inset-bottom));
     }
 
     .card{
-        padding:12px
+        padding:14px;
+        margin-bottom:14px;
+        border-radius:12px;
     }
 
+    .grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;
+    }
+
+    .stat{
+        padding:14px;
+    }
+
+    .toolbar{
+        align-items:stretch;
+    }
+
+    .toolbar > input,
+    .toolbar > select,
+    .toolbar > button,
+    .toolbar > .btn{
+        flex:1 1 150px;
+    }
+
+    .help-grid,
+    .help-mini-grid{
+        grid-template-columns:1fr;
+    }
+
+    .help-hero{
+        padding:20px;
+    }
+
+    .help-flow{
+        flex-direction:column;
+    }
+
+    .help-flow-arrow{
+        display:none;
+    }
+
+    .help-flow-step{
+        width:100%;
+    }
+
+    .flow{
+        flex-direction:column;
+    }
+
+    .flow-arrow{
+        display:none;
+    }
+
+    .flow-step{
+        width:100%;
+    }
+
+    .help-modal{
+        padding:8px;
+    }
+
+    .help-modal-box{
+        margin:4px auto;
+        border-radius:14px;
+    }
+
+    .help-modal-head{
+        padding:14px;
+    }
+
+    .help-modal-content{
+        padding:12px;
+    }
+}
+
+@media(max-width:520px){
+    .wrap{
+        padding-left:8px;
+        padding-right:8px;
+    }
+
+    .card{
+        padding:12px;
+    }
+
+    .grid{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .stat{
+        padding:12px;
+    }
+
+    .stat strong{
+        font-size:22px;
+    }
+
+    input,
+    select,
+    textarea,
+    button,
+    .btn{
+        min-height:44px;
+    }
+
+    /* Forms become single-column on small phones. */
+    form{
+        width:100%;
+    }
+
+    form > input:not([type="hidden"]),
+    form > select,
+    form > textarea{
+        width:100%;
+        margin:4px 0;
+    }
+
+    form > button,
+    form > .btn{
+        width:100%;
+        margin:5px 0;
+    }
+
+    .login{
+        margin:18px auto;
+    }
+
+    .login-help,
+    .login-help-button{
+        position:static;
+        display:block;
+        width:max-content;
+        margin:0 0 12px auto;
+    }
+
+    .help-page{
+        padding:0;
+        margin:8px auto;
+    }
+
+    .help-hero{
+        border-radius:12px;
+        padding:16px;
+    }
+
+    .help-section{
+        padding:15px;
+    }
+}
+
+@media(max-width:360px){
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    .nav-brand{
+        font-size:16px;
+    }
+
+    .card{
+        padding:10px;
+    }
+}
+
+/* Respect users who prefer less motion. */
+@media(prefers-reduced-motion:reduce){
+    *,
+    *::before,
+    *::after{
+        scroll-behavior:auto !important;
+        transition:none !important;
+        animation:none !important;
+    }
 }
 
 
-/* Help center + login password controls */
-.login{position:relative}
-.login-help{position:absolute;right:18px;top:18px;text-decoration:none;background:#6d4bc1;color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.login-help:hover{background:#5635a4;color:#fff}
-.password-wrap{position:relative;width:100%;margin:0 0 0 0}
-.password-wrap input{width:100%;padding-right:78px;box-sizing:border-box}
-.password-toggle{position:absolute;right:5px;top:5px;margin:0;padding:6px 10px;background:#64748b;color:#fff;border:0;border-radius:6px;font-size:12px;cursor:pointer}
-.password-toggle:hover{background:#475569}
-.help-page{max-width:1150px;margin:20px auto;padding:0 10px}
-.help-hero{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:16px;padding:28px;margin-bottom:18px;box-shadow:0 10px 30px rgba(76,29,149,.16)}
-.help-hero h1{margin:0 0 10px;font-size:30px}
-.help-hero p{margin:8px 0;line-height:1.6}
-.help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.help-section{background:#fff;border-radius:14px;padding:20px;border:1px solid #e5e7eb;box-shadow:0 4px 14px rgba(15,23,42,.05)}
-.help-section h2{margin-top:0;color:#4f46e5;font-size:20px}
-.help-section li{margin:6px 0;line-height:1.5}
-.flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;margin-top:12px}
-.flow-step{background:#eef2ff;border:1px solid #c7d2fe;padding:10px 14px;border-radius:10px;font-weight:700;text-align:center;min-width:120px}
-.flow-arrow{font-size:24px;font-weight:700;color:#6366f1}
-.contact-card{background:#f8fafc;border-left:4px solid #6366f1;border-radius:10px;padding:12px 14px}
-.help-footer{text-align:center;margin:20px 0 4px;color:#64748b;font-size:13px}
-
-.login-help-button{position:absolute;right:18px;top:18px;background:#6d4bc1;color:#fff;border:0;padding:8px 12px;border-radius:8px;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:pointer;z-index:2}
-.login-help-button:hover{background:#5635a4}
-.help-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:9999;padding:20px;overflow:auto}
-.help-modal.open{display:block}
-.help-modal-box{max-width:1100px;margin:20px auto;background:#f8fafc;border-radius:18px;box-shadow:0 15px 50px rgba(0,0,0,.3);overflow:hidden}
-.help-modal-head{position:sticky;top:0;background:#4f46e5;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:2}
-.help-modal-head h2{margin:0;font-size:22px}
-.help-close{background:#fff;color:#4f46e5;border:0;border-radius:8px;padding:8px 12px;font-weight:800;cursor:pointer}
-.help-modal-content{padding:20px}
-.help-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.help-mini-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
-.help-mini-card h3{margin-top:0;color:#4f46e5}
-.help-flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin-top:10px}
-.help-flow-step{background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:9px 12px;font-weight:700;text-align:center}
-.help-flow-arrow{font-size:22px;font-weight:800;color:#6366f1}
-.help-contact{background:#eef2ff;border-left:4px solid #6366f1;border-radius:10px;padding:10px 14px}
-@media(max-width:700px){.help-mini-grid{grid-template-columns:1fr}.login-help-button{position:static;display:block;margin:0 0 12px auto}.help-flow{flex-direction:column}.help-flow-arrow{display:none}.help-flow-step{width:100%}.help-modal{padding:8px}.help-modal-box{margin:4px auto}}
-@media(max-width:700px){.help-grid{grid-template-columns:1fr}.login-help{position:static;display:block;width:max-content;margin:0 0 12px auto}.flow-arrow{display:none}.flow{flex-direction:column}.flow-step{width:100%;box-sizing:border-box}.help-hero h1{font-size:24px}}
-
+/* Login page: polished responsive layout for phones, tablets and laptops */
+.login-page{
+    min-height:calc(100vh - 24px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px 16px 40px;
+}
+.login-shell{
+    width:min(100%, 560px);
+}
+.login.card{
+    position:relative;
+    width:100%;
+    margin:0;
+    padding:32px;
+    border:1px solid var(--border);
+    border-radius:20px;
+    box-shadow:0 12px 35px rgba(15,23,42,.12);
+    background:var(--card);
+}
+.login-logo{
+    width:68px;
+    height:68px;
+    margin:0 auto 14px;
+    display:grid;
+    place-items:center;
+    border-radius:18px;
+    background:linear-gradient(135deg,var(--primary),var(--primary2));
+    color:#fff;
+    font-size:34px;
+    box-shadow:0 8px 20px rgba(18,60,105,.22);
+}
+.login-title{
+    margin:0;
+    text-align:center;
+    font-size:clamp(25px,5vw,34px);
+    line-height:1.15;
+}
+.login-subtitle{
+    margin:9px auto 24px;
+    max-width:420px;
+    text-align:center;
+    color:var(--muted);
+    font-size:15px;
+}
+.login-form{
+    display:grid;
+    gap:13px;
+}
+.login-form input{
+    width:100%;
+    min-height:48px;
+    margin:0;
+    font-size:16px;
+    border-radius:11px;
+}
+.login-password{
+    position:relative;
+}
+.login-password input{
+    width:100%;
+    box-sizing:border-box;
+    padding-right:90px;
+}
+.login-password .password-toggle{
+    position:absolute;
+    right:6px;
+    top:6px;
+    width:auto !important;
+    min-width:58px;
+    max-width:82px;
+    min-height:36px;
+    height:36px;
+    padding:0 12px;
+    margin:0;
+    border-radius:8px;
+    font-size:14px;
+    line-height:1;
+    z-index:2;
+}
+.login-submit{
+    width:100%;
+    min-height:48px;
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+    border-radius:11px;
+}
+.login-help-note{
+    margin:17px 0 0;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+}
+.login-divider{
+    height:1px;
+    margin:24px 0;
+    background:var(--border);
+    border:0;
+}
+.login-actions{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+}
+.login-actions .btn{
+    width:100%;
+    min-height:46px;
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    line-height:1.25;
+    padding:10px 12px;
+    border-radius:10px;
+}
+.login-demo{
+    margin-top:20px;
+    padding:14px 16px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:#f8fafc;
+}
+.login-demo-title{
+    margin:0 0 9px;
+    font-weight:700;
+}
+.login-demo-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:7px 0;
+    border-top:1px solid #e7ecf2;
+    font-size:14px;
+}
+.login-demo-row:first-of-type{border-top:0}
+.login-demo code{
+    padding:3px 7px;
+    border-radius:6px;
+    background:#eef2f7;
+    font-size:13px;
+}
+.login-help-button{
+    position:absolute;
+    top:18px;
+    right:18px;
+    min-height:38px;
+    padding:7px 12px;
+    margin:0;
+    border-radius:9px;
+    font-size:14px;
+}
+@media(max-width:700px){
+    .login-page{padding:18px 12px 28px;align-items:flex-start}
+    .login-password .password-toggle{width:auto !important;min-width:58px;max-width:82px;}
+    .login-shell{padding-top:18px}
+    .login.card{padding:26px 18px 20px;border-radius:16px}
+    .login-logo{width:58px;height:58px;font-size:29px;border-radius:15px}
+    .login-title{font-size:27px;padding-top:18px}
+    .login-subtitle{font-size:14px;margin-bottom:20px}
+    .login-actions{grid-template-columns:1fr}
+    .login-actions .btn{min-height:46px}
+    .login-demo-row{align-items:flex-start;flex-direction:column;gap:4px}
+    .login-help-button{top:12px;right:12px}
+}
+@media(max-width:380px){
+    .login-page{padding-left:8px;padding-right:8px}
+    .login.card{padding-left:14px;padding-right:14px}
+    .login-title{font-size:24px}
+}
 </style>
 
 <script>
-
 function filterTable(inputId, tableId){
+    const input = document.getElementById(inputId);
+    const table = document.getElementById(tableId);
+    if(!input || !table) return;
 
-    const q =
-        document
-        .getElementById(inputId)
-        .value
-        .toLowerCase();
+    const q = input.value.toLowerCase();
 
-    document
-    .querySelectorAll(
-        '#'+tableId+' tbody tr'
-    )
-    .forEach(r=>{
-
-        r.style.display =
-            r.innerText
-            .toLowerCase()
-            .includes(q)
-            ? ''
-            : 'none';
-
+    table.querySelectorAll('tbody tr').forEach(r=>{
+        r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
     });
 }
 
-
 function markAll(status){
-
-    document
-    .querySelectorAll(
-        'select.att-status'
-    )
-    .forEach(
-        s => s.value = status
-    );
-
+    document.querySelectorAll('select.att-status').forEach(s => s.value = status);
 }
-
 
 function confirmDelete(){
-
-    return confirm(
-        'Are you sure you want to delete this record?'
-    );
-
+    return confirm('Are you sure you want to delete this record?');
 }
-
 
 function togglePassword(inputId, button){
     const input = document.getElementById(inputId);
-    if(!input || !button){ return; }
+    if(!input || !button) return;
+
     if(input.type === 'password'){
         input.type = 'text';
         button.innerText = 'Hide';
@@ -1526,120 +2311,238 @@ function closeHelp(){
     }
 }
 
+function toggleMobileMenu(){
+    const nav = document.getElementById('mainNav');
+    const button = document.getElementById('mobileMenuButton');
+    if(!nav || !button) return;
+
+    const open = nav.classList.toggle('menu-open');
+    if(open){
+        nav.classList.remove('nav-hidden');
+    }
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    button.innerText = open ? '✕' : '☰';
+    document.body.classList.toggle('menu-open', open);
+}
+
+function closeMobileMenu(){
+    const nav = document.getElementById('mainNav');
+    const button = document.getElementById('mobileMenuButton');
+    if(!nav || !button) return;
+
+    nav.classList.remove('menu-open');
+    button.setAttribute('aria-expanded', 'false');
+    button.innerText = '☰';
+    document.body.classList.remove('menu-open');
+}
+
 document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeHelp(); }
+    if(e.key === 'Escape'){
+        closeHelp();
+        closeMobileMenu();
+    }
 });
 
-</script>
+document.addEventListener('click', function(e){
+    const nav = document.getElementById('mainNav');
+    if(!nav || !nav.classList.contains('menu-open')) return;
 
+    if(e.target.closest('a')){
+        closeMobileMenu();
+    }
+});
+
+/* ============================================================
+   MOBILE NAVIGATION SCROLL BEHAVIOR
+   - Scroll DOWN: hide the top navigation.
+   - Scroll UP: show the top navigation.
+   - Near the top: always show it.
+   - Desktop/tablet: keep normal sticky navigation.
+   - Never hide the navigation while the hamburger menu is open.
+   ============================================================ */
+(function(){
+    let lastScrollY = window.scrollY || 0;
+    let ticking = false;
+    const SHOW_AT_TOP = 12;
+    const MIN_DELTA = 6;
+
+    function updateMobileNav(){
+        const nav = document.getElementById('mainNav');
+        if(!nav){
+            ticking = false;
+            return;
+        }
+
+        const currentY = window.scrollY || window.pageYOffset || 0;
+
+        /* Do not use hide-on-scroll on larger screens. */
+        if(window.innerWidth > 900){
+            nav.classList.remove('nav-hidden');
+            lastScrollY = currentY;
+            ticking = false;
+            return;
+        }
+
+        /* Keep nav visible at the very top. */
+        if(currentY <= SHOW_AT_TOP){
+            nav.classList.remove('nav-hidden');
+            lastScrollY = currentY;
+            ticking = false;
+            return;
+        }
+
+        /* Keep it visible while the mobile menu is open. */
+        if(nav.classList.contains('menu-open')){
+            nav.classList.remove('nav-hidden');
+            lastScrollY = currentY;
+            ticking = false;
+            return;
+        }
+
+        const delta = currentY - lastScrollY;
+
+        if(delta > MIN_DELTA){
+            /* Scrolling down */
+            nav.classList.add('nav-hidden');
+        }else if(delta < -MIN_DELTA){
+            /* Scrolling up */
+            nav.classList.remove('nav-hidden');
+        }
+
+        lastScrollY = currentY;
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', function(){
+        if(!ticking){
+            window.requestAnimationFrame(updateMobileNav);
+            ticking = true;
+        }
+    }, {passive:true});
+
+    window.addEventListener('resize', function(){
+        const nav = document.getElementById('mainNav');
+        if(window.innerWidth > 900 && nav){
+            nav.classList.remove('nav-hidden');
+        }
+        lastScrollY = window.scrollY || 0;
+    }, {passive:true});
+})();
+
+window.addEventListener('resize', function(){
+    if(window.innerWidth > 900){
+        closeMobileMenu();
+    }
+});
+</script>
 </head>
 
 <body>
 
 {% if me %}
+<nav id="mainNav" aria-label="Main navigation">
 
-<nav>
+    <div class="nav-brand">🏫 JNV Attendance</div>
 
-<b>🏫 JNV Attendance</b>
+    <button
+        id="mobileMenuButton"
+        class="nav-toggle"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+        onclick="toggleMobileMenu()"
+    >☰</button>
 
-<a href="{{url_for('dashboard')}}">Dashboard</a>
+    <div class="nav-links">
 
-{% if me.role == 'principal' %}
+        <a href="{{url_for('dashboard')}}">Dashboard</a>
 
-<a href="{{url_for('manage_teachers')}}">Teachers</a>
-<a href="{{url_for('manage_classes')}}">Classes</a>
-<a href="{{url_for('manage_subjects')}}">Subjects</a>
-<a href="{{url_for('manage_assignments')}}">Assignments</a>
-<a href="{{url_for('principal_mod_management')}}">🛡️ MOD</a>
-<a href="{{url_for('principal_mod_report')}}">MOD Attendance</a>
-<a href="{{url_for('students_page')}}">Students</a>
+        {% if me.role == 'principal' %}
 
-<span class="menu-title">📊 Teacher Monitoring</span>
-<a href="{{url_for('principal_period_report')}}">Period Attendance</a>
-<a href="{{url_for('principal_daily_report')}}">Daily Attendance</a>
-<a href="{{url_for('principal_assembly_report')}}">Morning Assembly</a>
-<a href="{{url_for('principal_hostel_report')}}">Hostel / Night</a>
-<a href="{{url_for('principal_pt_report')}}">Morning PT</a>
-<a href="{{url_for('principal_remedial_report')}}">Remedial</a>
-<a href="{{url_for('principal_evening_student_report')}}">Evening Student</a>
-<a href="{{url_for('principal_evening_games_report')}}">Evening Games</a>
+        <a href="{{url_for('manage_teachers')}}">Teachers</a>
+        <a href="{{url_for('manage_classes')}}">Classes</a>
+        <a href="{{url_for('manage_subjects')}}">Subjects</a>
+        <a href="{{url_for('manage_assignments')}}">Assignments</a>
+        <a href="{{url_for('principal_mod_management')}}">🛡️ MOD</a>
+        <a href="{{url_for('principal_mod_report')}}">MOD Attendance</a>
+        <a href="{{url_for('students_page')}}">Students</a>
 
-<a href="{{url_for('staff_attendance')}}">Staff</a>
-<a href="{{url_for('leave_management')}}">Leave</a>
-<a href="{{url_for('medical_management')}}">Medical</a>
+        <span class="menu-title">📊 Teacher Monitoring</span>
+        <a href="{{url_for('principal_period_report')}}">Period Attendance</a>
+        <a href="{{url_for('principal_daily_report')}}">Daily Attendance</a>
+        <a href="{{url_for('principal_assembly_report')}}">Morning Assembly</a>
+        <a href="{{url_for('principal_hostel_report')}}">Hostel / Night</a>
+        <a href="{{url_for('principal_pt_report')}}">Morning PT</a>
+        <a href="{{url_for('principal_remedial_report')}}">Remedial</a>
+        <a href="{{url_for('principal_evening_student_report')}}">Evening Student</a>
+        <a href="{{url_for('principal_evening_games_report')}}">Evening Games</a>
 
-<a href="{{url_for('attendance_reports')}}">All Reports</a>
-<a href="{{url_for('house_wise_report')}}">House-wise</a>
-<a href="{{url_for('principal_report')}}">Class-wise</a>
-<a href="{{url_for('student_report')}}">Student Report</a>
-<a href="{{url_for('monthly_report')}}">Monthly</a>
-<a href="{{url_for('low_attendance')}}">Low Attendance</a>
+        <a href="{{url_for('staff_attendance')}}">Staff</a>
+        <a href="{{url_for('leave_management')}}">Leave</a>
+        <a href="{{url_for('medical_management')}}">Medical</a>
 
-<a href="{{url_for('export_all_attendance')}}">CSV Export</a>
-<a href="{{url_for('backup_data')}}">Backup</a>
+        <a href="{{url_for('attendance_reports')}}">All Reports</a>
+        <a href="{{url_for('house_wise_report')}}">House-wise</a>
+        <a href="{{url_for('principal_report')}}">Class-wise</a>
+        <a href="{{url_for('student_report')}}">Student Report</a>
+        <a href="{{url_for('monthly_report')}}">Monthly</a>
+        <a href="{{url_for('low_attendance')}}">Low Attendance</a>
 
-{% elif me.role == 'mod' %}
+        <a href="{{url_for('export_all_attendance')}}">CSV Export</a>
+        <a href="{{url_for('backup_data')}}">Backup</a>
 
-<a href="{{url_for('mod_dashboard')}}">MOD Dashboard</a>
-<a href="{{url_for('mod_attendance', module='morning_pt')}}">Morning PT</a>
-<a href="{{url_for('mod_attendance', module='assembly')}}">Assembly</a>
-<a href="{{url_for('mod_attendance', module='mess')}}">Mess</a>
-<a href="{{url_for('mod_attendance', module='remedial')}}">Remedial</a>
-<a href="{{url_for('mod_attendance', module='evening_games')}}">Evening Games</a>
-<a href="{{url_for('mod_attendance', module='evening_study')}}">Evening Study</a>
-<a href="{{url_for('mod_attendance', module='night')}}">Night Attendance</a>
+        {% elif me.role == 'mod' %}
 
-{% else %}
+        <a href="{{url_for('mod_dashboard')}}">MOD Dashboard</a>
+        <a href="{{url_for('mod_attendance', module='morning_pt')}}">Morning PT</a>
+        <a href="{{url_for('mod_attendance', module='assembly')}}">Assembly</a>
+        <a href="{{url_for('mod_attendance', module='mess')}}">Mess</a>
+        <a href="{{url_for('mod_attendance', module='remedial')}}">Remedial</a>
+        <a href="{{url_for('mod_attendance', module='evening_games')}}">Evening Games</a>
+        <a href="{{url_for('mod_attendance', module='evening_study')}}">Evening Study</a>
+        <a href="{{url_for('mod_attendance', module='night')}}">Night Attendance</a>
 
-<a href="{{url_for('attendance')}}">Period Attendance</a>
-<a href="{{url_for('daily_attendance')}}">Daily Attendance</a>
-<a href="{{url_for('assembly_attendance')}}">Assembly</a>
-<a href="{{url_for('hostel_attendance')}}">Hostel/Night</a>
-<a href="{{url_for('mess_attendance')}}">Mess</a>
+        {% else %}
 
-<a href="{{url_for('special_attendance', kind='morning_pt')}}">Morning PT</a>
-<a href="{{url_for('special_attendance', kind='remedial')}}">Remedial</a>
-<a href="{{url_for('special_attendance', kind='evening_student')}}">Evening Student</a>
-<a href="{{url_for('special_attendance', kind='evening_games')}}">Evening Games</a>
+        <a href="{{url_for('attendance')}}">Period Attendance</a>
+        <a href="{{url_for('daily_attendance')}}">Daily Attendance</a>
+        <a href="{{url_for('assembly_attendance')}}">Assembly</a>
+        <a href="{{url_for('hostel_attendance')}}">Hostel/Night</a>
+        <a href="{{url_for('mess_attendance')}}">Mess</a>
 
-<a href="{{url_for('leave_management')}}">Leave/Permission</a>
-<a href="{{url_for('medical_management')}}">Medical</a>
-<a href="{{url_for('my_attendance')}}">My History</a>
-<a href="{{url_for('students_page')}}">My Students</a>
+        <a href="{{url_for('special_attendance', kind='morning_pt')}}">Morning PT</a>
+        <a href="{{url_for('special_attendance', kind='remedial')}}">Remedial</a>
+        <a href="{{url_for('special_attendance', kind='evening_student')}}">Evening Student</a>
+        <a href="{{url_for('special_attendance', kind='evening_games')}}">Evening Games</a>
 
-{% endif %}
+        <a href="{{url_for('leave_management')}}">Leave/Permission</a>
+        <a href="{{url_for('medical_management')}}">Medical</a>
+        <a href="{{url_for('my_attendance')}}">My History</a>
+        <a href="{{url_for('students_page')}}">My Students</a>
 
-<a href="{{url_for('change_password')}}">Password</a>
-<a href="{{url_for('logout')}}">Logout</a>
+        {% endif %}
 
+        <a href="{{url_for('change_password')}}">Password</a>
+        <a href="{{url_for('logout')}}">Logout</a>
+
+    </div>
 </nav>
-
 {% endif %}
-
 
 <div class="wrap">
 
 {% with messages=get_flashed_messages() %}
-
 {% for m in messages %}
-
-<div class="alert">
-{{m}}
-</div>
-
+<div class="alert">{{m}}</div>
 {% endfor %}
-
 {% endwith %}
-
 
 {{ content|safe }}
 
 </div>
 
 </body>
-
 </html>
-
 """
 
 
@@ -1891,75 +2794,48 @@ def login():
 
     body = """
 
-    <div class="card login">
+    <main class="login-page">
+      <div class="login-shell">
+        <div class="card login">
 
-        <button type="button" class="login-help-button" onclick="openHelp()" title="Open Help Center">
-            ❓ Help
-        </button>
-
-        <h1 class="center">
-        🏫 JNV Attendance
-        </h1>
-
-        <p class="center small">
-        Jawahar Navodaya Vidyalaya
-        Attendance Management System
-        </p>
-
-        <form method="post">
-
-            <input
-                name="username"
-                placeholder="Username"
-                style="width:100%"
-                required
-            >
-
-            <div class="password-wrap">
-                <input
-                    id="loginPassword"
-                    name="password"
-                    type="password"
-                    placeholder="Password"
-                    autocomplete="current-password"
-                    required
-                >
-                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Show or hide password">
-                    Show
-                </button>
-            </div>
-
-            <button
-                style="width:100%;margin-top:8px"
-            >
-                Login
+            <button type="button" class="login-help-button" onclick="openHelp()" title="Open Help Center" aria-label="Open Help Center">
+                ❓ Help
             </button>
 
-        </form>
+            <div class="login-logo" aria-hidden="true">🏫</div>
+            <h1 class="login-title">JNV Attendance</h1>
+            <p class="login-subtitle">Jawahar Navodaya Vidyalaya<br>Attendance Management System</p>
 
-        <p class="center small">Need help? Click the <b>❓ Help</b> button in the top-right corner.</p>
+            <form method="post" class="login-form">
+                <input name="username" placeholder="Username" autocomplete="username" required aria-label="Username">
 
-        <hr>
+                <div class="login-password">
+                    <input id="loginPassword" name="password" type="password" placeholder="Password" autocomplete="current-password" required aria-label="Password">
+                    <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Show or hide password">Show</button>
+                </div>
 
-        <p class="center">
-          <a class="btn purple" href="{{ url_for('mod_login') }}">🛡️ MOD Login</a>
-        </p>
+                <button class="login-submit" type="submit">Login</button>
+            </form>
 
-        <p class="center"><a class="btn gray" href="{{ url_for('forgot_password') }}">🔐 Forgot Principal Password?</a></p>
+            <p class="login-help-note">Need help? Tap <b>❓ Help</b> above for instructions.</p>
 
-        <p class="center"><a class="btn" href="{{ url_for('admin_login') }}">🛠️ Admin Login</a></p>
+            <hr class="login-divider">
 
-        <p>
-        <b>Teacher 1:</b>
-        teacher1 / teacher123
-        </p>
+            <div class="login-actions">
+                <a class="btn purple" href="{{ url_for('mod_login') }}">🛡️ MOD Login</a>
+                <a class="btn gray" href="{{ url_for('forgot_password') }}">🔐 Forgot Password</a>
+                <a class="btn" href="{{ url_for('admin_login') }}">🛠️ Admin Login</a>
+            </div>
 
-        <p>
-        <b>Teacher 2:</b>
-        teacher2 / teacher123
-        </p>
+            <div class="login-demo">
+                <p class="login-demo-title">Demo Teacher Accounts</p>
+                <div class="login-demo-row"><b>Teacher 1</b><code>teacher1 / teacher123</code></div>
+                <div class="login-demo-row"><b>Teacher 2</b><code>teacher2 / teacher123</code></div>
+            </div>
 
-    </div>
+        </div>
+      </div>
+    </main>
 
     <div id="loginHelpModal" class="help-modal" onclick="if(event.target === this){ closeHelp(); }">
         <div class="help-modal-box">
